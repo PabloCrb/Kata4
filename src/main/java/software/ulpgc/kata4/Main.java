@@ -2,18 +2,36 @@ package software.ulpgc.kata4;
 
 import java.sql.SQLException;
 import java.util.List;
+import software.ulpgc.kata3.*;
 
 public class Main {
-    public static void main(String[] args) throws SQLException {
-        PokemonLoader loader = SQLitePokemonLoader.with("PokemonStats.db");
-        List<Pokemon> pokemon = loader.loadAll();
-        List<Pokemon> dragons = loader.loadType("Dragon");
-        /*for (Pokemon p : pokemon) {
-            System.out.println(p.name());
-        }*/
+    private static List<Pokemon> pokemon;
+    public static void main(String[] args) {
+        try {
+            PokemonLoader loader = SQLitePokemonLoader.with("jdbc:sqlite:C:\\Users\\Pablo\\IdeaProjects\\Databases\\PokemonStats.db");
+            pokemon = loader.loadAll();
+            MainFrame frame = new MainFrame();
+            frame.getDisplay().show("Pokemon stats histogram", "Stats", "Frequency", pokemonLoad());
+            frame.setVisible(true);
 
-        for (Pokemon p : dragons) {
-            System.out.println(p.name());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    private static Histogram pokemonLoad() {
+        return new Histogram() {
+            @Override
+            public int bins() {
+                return 15;
+            }
+
+            @Override
+            public double[] values() {
+                return pokemon.stream().
+                        mapToDouble(Pokemon::total).
+                        toArray();
+            }
+        };
     }
 }

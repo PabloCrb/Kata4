@@ -11,49 +11,34 @@ import static java.sql.DriverManager.*;
 
 public class SQLitePokemonLoader implements PokemonLoader {
     private final Connection connection;
-    private String type;
 
     public SQLitePokemonLoader(Connection connection) {
         this.connection = connection;
     }
 
-    public static PokemonLoader with(String database) throws SQLException {
-        return new SQLitePokemonLoader(getConnection("jdbc:sqlite:C:\\Users\\Pablo\\IdeaProjects\\Databases\\" + database));
+    public static PokemonLoader with(String databaseRoute) throws SQLException {
+        return new SQLitePokemonLoader(getConnection(databaseRoute));
     }
 
     @Override
     public List<Pokemon> loadAll() {
         try {
-            return load(QueryAll());
+            return load(queryAll());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static final String QUERY_ALL = "SELECT * FROM Pokemon";
-    private ResultSet QueryAll() throws SQLException {
-        return connection.createStatement().executeQuery(QUERY_ALL);
-    }
-
-    @Override
-    public List<Pokemon> loadType(String type) {
-        this.type = type;
-        try {
-            return load(QueryType());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private ResultSet QueryType() throws SQLException {
-        String QUERYTYPE = "SELECT * FROM Pokemon WHERE Type1='" + type + "' OR Type2='" + type + "'";
-        return connection.createStatement().executeQuery(QUERYTYPE);
     }
 
     private List<Pokemon> load(ResultSet resultSet) throws SQLException {
         List<Pokemon> pokemon = new ArrayList<>();
         while (resultSet.next()) {
-            pokemon.add(new Pokemon(
+            pokemon.add(pokemonFrom(resultSet));
+        }
+        return pokemon;
+    }
+
+    private Pokemon pokemonFrom(ResultSet resultSet) throws SQLException {
+        return new Pokemon(
                 resultSet.getInt("#"),
                 resultSet.getString("Name"),
                 resultSet.getString("Type1"),
@@ -65,10 +50,41 @@ public class SQLitePokemonLoader implements PokemonLoader {
                 resultSet.getInt("Sp.Atk"),
                 resultSet.getInt("Sp.Def"),
                 resultSet.getInt("Speed"),
-                resultSet.getInt("Generation"),
+                resultSet.getInt("generation"),
                 resultSet.getString("Legendary")
-            ));
+                );
+    }
+
+    private static String QUERY_ALL = "SELECT * FROM Pokemon";
+    private ResultSet queryAll() throws SQLException {
+        return connection.createStatement().executeQuery(QUERY_ALL);
+    }
+
+    private String queryType;
+    @Override
+    public List<Pokemon> loadFromType(String type) {
+        queryType = "SELECT * FROM Pokemon WHERE Type1='%s' OR Type2='%s'".formatted(type, type);
+        try {
+            return load(queryType());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        return pokemon;
+    }
+
+    private ResultSet queryType() throws SQLException {
+        return connection.createStatement().executeQuery(queryType);
+    }
+
+    @Override
+    public List<Pokemon> loadFromSQLQuery(String query) {
+        try {
+            return load(querySQL(query));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private ResultSet querySQL(String query) throws SQLException {
+        return connection.createStatement().executeQuery(query);
     }
 }

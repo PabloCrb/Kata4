@@ -9,8 +9,8 @@ public record Pokemon(
         int HP,
         int attack,
         int defense,
-        int specialAttack,
-        int specialDefense,
+        int spAtk,
+        int spDef,
         int speed,
         int generation,
         String legendary
